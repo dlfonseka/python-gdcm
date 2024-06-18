@@ -20,6 +20,26 @@ GDCM_SOURCE = os.path.join(CURRENT_DIR, "gdcm_src")
 GDCM_MODULE = os.path.join(CURRENT_DIR, "_gdcm")
 
 
+def patch_gdcm():
+    with open(os.path.join(GDCM_SOURCE,"Wrapping/Python/gdcmswig.i"), 'r+') as f:
+        lines = f.readlines()
+
+        insert_idx = lines.index("    self->GetBuffer(*buffer);\n")
+
+        # TODO: Do this patch replacement automatically by reading in a patch file (from a diff)
+        patch = ['    if (!ret) {\n', 
+                 '      free(*buffer);\n', 
+                 '      *buffer = 0;\n', 
+                 '      *size = 0;\n', 
+                 '    }\n']
+
+        for p in patch:
+            lines.insert(insert_idx + 1 , p)
+            insert_idx += 1
+
+        f.seek(0)
+        f.writelines(lines)
+
 # See https://stackoverflow.com/a/50357801/115612
 def get_libpython():
     v = sysconfig.get_config_vars()
@@ -80,6 +100,7 @@ class ConfiguredCMakeExtension(setuptools.Extension):
 class CMakeBuildExt(build_ext):
     def build_extension(self, ext):
         if isinstance(ext, ConfiguredCMakeExtension):
+            patch_gdcm()
             try:
                 libpython = get_libpython()
             except KeyError:
