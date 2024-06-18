@@ -26,6 +26,8 @@ def patch_gdcm():
 
         insert_idx = lines.index("    self->GetBuffer(*buffer);\n")
 
+        lines[insert_idx] = "    bool ret = self->GetBuffer(*buffer);\n"
+
         # TODO: Do this patch replacement automatically by reading in a patch file (from a diff)
         patch = ['    if (!ret) {\n', 
                  '      free(*buffer);\n', 
